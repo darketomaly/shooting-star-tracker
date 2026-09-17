@@ -25,43 +25,28 @@ HERE = Path(__file__).parent
 DATA = HERE / "data" / FILE
 OUT = HERE / "out"
 
-
 def rows(path):
-    """The file as a list of lists, one per line. The Observatory puts three lines
-    of titles above the table and a legend below it, so keep only the lines that
-    start with a year."""
-    kept = []
+    """Read the hourly visibility scores from the generated CSV."""
     with path.open(encoding="utf-8-sig", newline="") as handle:
-        for line in csv.reader(handle):
-            if line and line[0].isdigit():
-                kept.append(line)
-    return kept
-
+        return list(csv.DictReader(handle))
 
 def main():
     table = rows(DATA)
-    print(f"{DATA.name}: {len(table)} rows. The first one: {table[0]}")
+    entries = "\n".join(
+        f"{row['time']}  {row['visibility_score']}%"
+        for row in table
+    )
 
-    days, values = [], []
-    for i, (year, month, day, value, quality) in enumerate(table):   # the loop over the numbers
-        if value == "***":                   # the Observatory's word for "missing"
-            continue
-        days.append(i + 1)
-        values.append(float(value))          # it arrived as text; make it a number
-    print(f"{len(values)} values, from {min(values)} to {max(values)}")
-
-    fig, ax = plt.subplots(figsize=(10, 4))
-    ax.plot(days, values, color="#d6591d", linewidth=1.5)
-    ax.set_xlabel("day of 2026")
-    ax.set_ylabel("daily mean temperature, °C")
-    ax.set_title("Hong Kong Observatory, 2026 so far")
+    fig, ax = plt.subplots(figsize=(10, 8))
+    ax.text(0.05, 0.95, f"Hourly visibility scores\n\n{entries}",
+            ha="left", va="top", fontsize=11, family="monospace")
+    ax.axis("off")
     fig.tight_layout()
 
     OUT.mkdir(exist_ok=True)
     fig.savefig(OUT / PICTURE, dpi=150)
     print(f"saved out/{PICTURE}")
     plt.show()
-
 
 if __name__ == "__main__":
     main()
