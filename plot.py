@@ -14,10 +14,12 @@ the bottom is the transformation you chose. Print before you plot.
 """
 
 import csv
+import random
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 from matplotlib.image import imread
+from matplotlib.transforms import Affine2D
 from fetch import FILE
 
 PICTURE = "plot.png"                           # what goes into out/, and into the README
@@ -44,11 +46,20 @@ def main():
     fig, ax = plt.subplots(figsize=(10, 8), facecolor="black")
     ax.set_facecolor("black")
     cloud = imread(SPRITE)
+    variation = random.Random(42)
     for x in range(8):
         for y in range(6):
-            ax.imshow(cloud, extent=(x, x + 1, y, y + 1),
-                      alpha=cloud_opacity)
-    ax.text(0.05, 5.95, f"{first['time']}  {score:.0f}%",
+            jitter_x = variation.uniform(-0.15, 0.15)
+            jitter_y = variation.uniform(-0.15, 0.15)
+            left, bottom = x + jitter_x, y + jitter_y
+            center_x, center_y = left + 0.5, bottom + 0.5
+            rotation = variation.uniform(-12, 12)
+            transform = (Affine2D()
+                         .rotate_deg_around(center_x, center_y, rotation)
+                         + ax.transData)
+            ax.imshow(cloud, extent=(left, left + 1, bottom, bottom + 1),
+                      transform=transform, alpha=cloud_opacity)
+    ax.text(0.05, 5.95, f"Visibility score at {first['time']} -> {score:.0f}%",
             ha="left", va="top", fontsize=14, color="white")
     ax.set_xlim(0, 8)
     ax.set_ylim(0, 6)
