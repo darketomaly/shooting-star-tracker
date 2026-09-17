@@ -95,6 +95,14 @@ def main():
 
     fig, ax = plt.subplots(figsize=(10, 8), facecolor=background)
     ax.set_facecolor(background)
+    star_variation = random.Random(84)
+    star_count = round(120 * max(0, min(stargaze_score, 100)) / 100)
+    stars_x = [star_variation.uniform(0, 8) for _ in range(star_count)]
+    stars_y = [star_variation.uniform(0, 6) for _ in range(star_count)]
+    star_sizes = [star_variation.uniform(3, 14) for _ in range(star_count)]
+    star_alphas = [star_variation.uniform(0.4, 1) for _ in range(star_count)]
+    ax.scatter(stars_x, stars_y, s=star_sizes, c="white",
+               alpha=star_alphas, linewidths=0)
     if sunrise <= hkt_time < sunset:
         ax.add_patch(Circle((7, 5), 0.45, color="#ffd34e"))
     else:
@@ -119,7 +127,6 @@ def main():
             f"Time ({TIMEZONE}): {readable_time}\n"
             f"Cloud coverage: {cloud_coverage:.0f}%\n"
             f"Visibility: {visibility}\n"
-            f"Stargaze score: {stargaze_score:.0f}%\n"
             f"Moon illumination: {moon_illumination:.0f}%\n"
             f"Moon altitude: {moon_altitude:.1f}°\n"
             f"Moon phase: {first['moon_name']}\n\n"
@@ -127,6 +134,12 @@ def main():
             "Light pollution, target altitude",
             ha="left", va="top", fontsize=14, color="white",
             bbox=dict(facecolor="black", alpha=0.55, edgecolor="none",
+                      boxstyle="round,pad=0.5"))
+    score_color = "#43d17a" if stargaze_score >= 50 else "#ff5c5c"
+    ax.text(0.05, 0.35, f"Stargaze score: {stargaze_score:.0f}%",
+            ha="left", va="bottom", fontsize=20, fontweight="bold",
+            color=score_color,
+            bbox=dict(facecolor="black", alpha=0.65, edgecolor="none",
                       boxstyle="round,pad=0.5"))
     ax.set_xlim(0, 8)
     ax.set_ylim(0, 6)
