@@ -16,6 +16,7 @@ phenomenon: handing it in unchanged is handing in nothing.
 """
 
 import csv
+from datetime import datetime
 from pathlib import Path
 
 # Fetch hourly cloud cover data from Open-Meteo for your coordinates
@@ -49,7 +50,13 @@ def fetch(url, path):
     sunset = response["daily"]["sunset"][0]
     visibility_score = [
         min(visibility_meters / MAX_CLEAR_VISIBILITY_METERS * 100, 100)
-        for visibility_meters in visibility
+        * (1 - cloud / 100)
+        if not (
+            datetime.fromisoformat(hour) >= datetime.fromisoformat(sunrise)
+            and datetime.fromisoformat(hour) < datetime.fromisoformat(sunset)
+        )
+        else 0
+        for hour, cloud, visibility_meters in zip(hours, cloud_coverage, visibility)
     ]
 
     with path.open("w", encoding="utf-8", newline="") as handle:

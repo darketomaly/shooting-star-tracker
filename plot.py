@@ -14,6 +14,7 @@ the bottom is the transformation you chose. Print before you plot.
 """
 
 import csv
+import math
 import random
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -64,29 +65,26 @@ def main():
     hkt = timezone(timedelta(hours=8))
     sunrise = datetime.fromisoformat(table[0]["sunrise"]).replace(tzinfo=hkt)
     sunset = datetime.fromisoformat(table[0]["sunset"]).replace(tzinfo=hkt)
-    daytime_rows = [
-        row for row in table
-        if sunrise <= datetime.fromisoformat(row["time"]).replace(tzinfo=hkt) < sunset
-    ]
-    nighttime_rows = [row for row in table if row not in daytime_rows]
     first = next(
-        (row for row in nighttime_rows
-         if datetime.fromisoformat(row["time"]).hour == 0),
-        nighttime_rows[0],
+        (row for row in table
+         if datetime.fromisoformat(row["time"]).hour == 1),
+        table[0],
     )
     cloud_coverage = float(first["cloud_coverage"])
     coverage_fraction = max(0, min(cloud_coverage, 100)) / 100
     hkt_time = datetime.fromisoformat(first["time"]).replace(tzinfo=hkt)
     readable_time = hkt_time.strftime("%I:%M %p").lstrip("0")
     visibility = format_visibility(float(first["visibility"]))
+    visibility_score = float(first["visibility_score"])
     daylight_progress = (
         (hkt_time - sunrise).total_seconds()
         / (sunset - sunrise).total_seconds()
     )
-    daylight_brightness = max(0, min(1, daylight_progress))
-    if 0 <= daylight_progress <= 1:
-        import math
-        daylight_brightness = math.sin(math.pi * daylight_progress)
+    daylight_brightness = (
+        math.sin(math.pi * daylight_progress)
+        if 0 <= daylight_progress <= 1
+        else 0
+    )
     background = lerp_color((0.01, 0.02, 0.10), (0.35, 0.70, 0.95),
                             daylight_brightness)
 
@@ -115,7 +113,8 @@ def main():
     ax.text(0.05, 5.95,
             f"Time ({TIMEZONE}): {readable_time}\n"
             f"Cloud coverage: {cloud_coverage:.0f}%\n"
-            f"Visibility: {visibility}",
+            f"Visibility: {visibility}\n"
+            f"Good stargaze probability: {visibility_score:.0f}%",
             ha="left", va="top", fontsize=14, color="white")
     ax.set_xlim(0, 8)
     ax.set_ylim(0, 6)
