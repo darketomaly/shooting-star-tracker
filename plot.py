@@ -34,21 +34,20 @@ def rows(path):
     with path.open(encoding="utf-8-sig", newline="") as handle:
         return list(csv.DictReader(handle))
 
-def lerp(start, end, amount):
-    return start + (end - start) * amount
-
 def main():
     table = rows(DATA)
     first = table[0]
     cloud_coverage = float(first["cloud_coverage"])
-    cloud_opacity = lerp(0, 1, max(0, min(cloud_coverage, 100)) / 100)
+    coverage_fraction = max(0, min(cloud_coverage, 100)) / 100
 
     fig, ax = plt.subplots(figsize=(10, 8), facecolor="black")
     ax.set_facecolor("black")
     cloud = imread(SPRITE)
     variation = random.Random(42)
-    for x in range(8):
-        for y in range(6):
+    positions = [(x, y) for x in range(8) for y in range(6)]
+    variation.shuffle(positions)
+    cloud_count = round(len(positions) * coverage_fraction)
+    for x, y in positions[:cloud_count]:
             jitter_x = variation.uniform(-0.15, 0.15)
             jitter_y = variation.uniform(-0.15, 0.15)
             left, bottom = x + jitter_x, y + jitter_y
@@ -58,8 +57,10 @@ def main():
                          .rotate_deg_around(center_x, center_y, rotation)
                          + ax.transData)
             ax.imshow(cloud, extent=(left, left + 1, bottom, bottom + 1),
-                      transform=transform, alpha=cloud_opacity)
-    ax.text(0.05, 5.95, f"Cloud coverage at {first['time']} -> {cloud_coverage:.0f}%",
+                      transform=transform)
+    ax.text(0.05, 5.95,
+            f"Cloud coverage at {first['time']} -> {cloud_coverage:.0f}%\n"
+            f"Visibility -> {float(first['visibility']):.0f} m",
             ha="left", va="top", fontsize=14, color="white")
     ax.set_xlim(0, 8)
     ax.set_ylim(0, 6)
