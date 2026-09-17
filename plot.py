@@ -42,25 +42,45 @@ def format_visibility(meters):
         return f"{meters / 1000:.2f}".rstrip("0").rstrip(".") + " km"
     return f"{meters:.0f} m"
 
+def lerp_color(start, end, amount):
+    return tuple(
+        start_channel + (end_channel - start_channel) * amount
+        for start_channel, end_channel in zip(start, end)
+    )
+
 def main():
     table = rows(DATA)
     hkt = timezone(timedelta(hours=8))
     sunrise = datetime.fromisoformat(table[0]["sunrise"]).replace(tzinfo=hkt)
     sunset = datetime.fromisoformat(table[0]["sunset"]).replace(tzinfo=hkt)
-    first = next(
+    daytime_rows = [
         row for row in table
         if sunrise <= datetime.fromisoformat(row["time"]).replace(tzinfo=hkt) < sunset
+    ]
+    nighttime_rows = [row for row in table if row not in daytime_rows]
+    first = next(
+        (row for row in nighttime_rows
+         if datetime.fromisoformat(row["time"]).hour == 0),
+        nighttime_rows[0],
     )
     cloud_coverage = float(first["cloud_coverage"])
     coverage_fraction = max(0, min(cloud_coverage, 100)) / 100
     hkt_time = datetime.fromisoformat(first["time"]).replace(tzinfo=hkt)
     readable_time = hkt_time.strftime("%I:%M %p").lstrip("0")
     visibility = format_visibility(float(first["visibility"]))
-    sunrise = datetime.fromisoformat(first["sunrise"]).replace(tzinfo=hkt)
-    sunset = datetime.fromisoformat(first["sunset"]).replace(tzinfo=hkt)
+    daylight_progress = (
+        (hkt_time - sunrise).total_seconds()
+        / (sunset - sunrise).total_seconds()
+    )
+    daylight_brightness = max(0, min(1, daylight_progress))
+    if 0 <= daylight_progress <= 1:
+        import math
+        daylight_brightness = math.sin(math.pi * daylight_progress)
+    background = lerp_color((0.01, 0.02, 0.10), (0.35, 0.70, 0.95),
+                            daylight_brightness)
 
-    fig, ax = plt.subplots(figsize=(10, 8), facecolor="black")
-    ax.set_facecolor("black")
+    fig, ax = plt.subplots(figsize=(10, 8), facecolor=background)
+    ax.set_facecolor(background)
     if sunrise <= hkt_time < sunset:
         ax.add_patch(Circle((7, 5), 0.45, color="#ffd34e"))
     else:
