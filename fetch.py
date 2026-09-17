@@ -4,7 +4,8 @@
 # ///
 
 """
-Fetch the numbers and save the raw reply to data/, replacing any existing file.
+Fetch the numbers and save hourly visibility scores to data/, replacing any
+existing file.
 
     uv run fetch.py
 
@@ -14,6 +15,7 @@ can see what a file looks like when it arrives. It is an example, not your
 phenomenon: handing it in unchanged is handing in nothing.
 """
 
+import csv
 from pathlib import Path
 
 # Fetch hourly cloud cover data from Open-Meteo for your coordinates
@@ -33,7 +35,19 @@ def fetch(url, path):
     print(f"asking {url}")
     reply = requests.get(url, timeout=60, headers={"User-Agent": "SD5913 PolyU student"})
     reply.raise_for_status()
-    path.write_bytes(reply.content)      # the raw reply, byte for byte: what arrived is what gets committed
+    response = reply.json()
+
+    # Calculate a "Stargazing Visibility Score" (0% = Terrible, 100% = Perfect)
+    hours = response["hourly"]["time"][:24]
+    cloud_cover = response["hourly"]["cloud_cover"][:24]
+    visibility = response["hourly"]["visibility"][:24]
+    visibility_score = [100 - cloud for cloud in cloud_cover]
+
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.writer(handle)
+        writer.writerow(["time", "cloud_cover", "visibility", "visibility_score"])
+        writer.writerows(zip(hours, cloud_cover, visibility, visibility_score))
+
     print(f"saved data/{path.name} ({path.stat().st_size // 1024} KB). Now: git add data")
     return path
 
