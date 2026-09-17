@@ -58,7 +58,7 @@ def fetch(url, path):
     sunrise = response["daily"]["sunrise"][0]
     sunset = response["daily"]["sunset"][0]
     moon_phases = [moon_phase(hour) for hour in hours]
-    visibility_score = [
+    stargaze_score = [
         min(visibility_meters / MAX_CLEAR_VISIBILITY_METERS * 100, 100)
         * (1 - cloud / 100)
         if not (
@@ -72,11 +72,11 @@ def fetch(url, path):
     with path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.writer(handle)
         writer.writerow([
-            "time", "cloud_coverage", "visibility", "visibility_score",
+            "time", "cloud_coverage", "visibility", "stargaze_score",
             "sunrise", "sunset", "moon_phase",
         ])
         writer.writerows(
-            zip(hours, cloud_coverage, visibility, visibility_score,
+            zip(hours, cloud_coverage, visibility, stargaze_score,
                 [sunrise] * len(hours), [sunset] * len(hours), moon_phases)
         )
 

@@ -77,7 +77,7 @@ def main():
     hkt_time = datetime.fromisoformat(first["time"]).replace(tzinfo=hkt)
     readable_time = hkt_time.strftime("%I:%M %p").lstrip("0")
     visibility = format_visibility(float(first["visibility"]))
-    visibility_score = float(first["visibility_score"])
+    stargaze_score = float(first["stargaze_score"])
     moon_phase = float(first["moon_phase"])
     daylight_progress = (
         (hkt_time - sunrise).total_seconds()
@@ -117,7 +117,7 @@ def main():
             f"Time ({TIMEZONE}): {readable_time}\n"
             f"Cloud coverage: {cloud_coverage:.0f}%\n"
             f"Visibility: {visibility}\n"
-            f"Good stargaze probability: {visibility_score:.0f}%",
+            f"Stargaze score: {stargaze_score:.0f}%",
             ha="left", va="top", fontsize=14, color="white")
     ax.set_xlim(0, 8)
     ax.set_ylim(0, 6)
