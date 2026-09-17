@@ -1,6 +1,6 @@
 # /// script
 # requires-python = ">=3.10"
-# dependencies = ["matplotlib"]
+# dependencies = ["matplotlib", "numpy"]
 # ///
 
 """
@@ -22,6 +22,7 @@ import matplotlib.pyplot as plt
 from matplotlib.image import imread
 from matplotlib.patches import Circle
 from matplotlib.transforms import Affine2D
+import numpy as np
 from fetch import FILE
 
 PICTURE = "plot.png"                           # what goes into out/, and into the README
@@ -47,6 +48,16 @@ def lerp_color(start, end, amount):
         start_channel + (end_channel - start_channel) * amount
         for start_channel, end_channel in zip(start, end)
     )
+
+def moon_image():
+    coordinates = np.linspace(-1, 1, 100)
+    x, y = np.meshgrid(coordinates, coordinates)
+    moon = x**2 + y**2 <= 1
+    cutout = (x - 0.4)**2 + (y + 0.1)**2 <= 1
+    image = np.zeros((100, 100, 4))
+    image[..., :3] = (0.85, 0.85, 0.85)
+    image[..., 3] = moon & ~cutout
+    return image
 
 def main():
     table = rows(DATA)
@@ -84,8 +95,7 @@ def main():
     if sunrise <= hkt_time < sunset:
         ax.add_patch(Circle((7, 5), 0.45, color="#ffd34e"))
     else:
-        ax.add_patch(Circle((7, 5), 0.45, color="#d9d9d9"))
-        ax.add_patch(Circle((7.18, 5.15), 0.45, color="black"))
+        ax.imshow(moon_image(), extent=(6.55, 7.45, 4.55, 5.45))
     cloud = imread(SPRITE)
     variation = random.Random(42)
     positions = [(x, y) for x in range(8) for y in range(6)]
