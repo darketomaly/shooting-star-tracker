@@ -17,6 +17,7 @@ import csv
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+from matplotlib.image import imread
 from fetch import FILE
 
 PICTURE = "plot.png"                           # what goes into out/, and into the README
@@ -24,22 +25,33 @@ PICTURE = "plot.png"                           # what goes into out/, and into t
 HERE = Path(__file__).parent
 DATA = HERE / "data" / FILE
 OUT = HERE / "out"
+SPRITE = HERE / "sprites" / "cloud.png"
 
 def rows(path):
     """Read the hourly visibility scores from the generated CSV."""
     with path.open(encoding="utf-8-sig", newline="") as handle:
         return list(csv.DictReader(handle))
 
+def lerp(start, end, amount):
+    return start + (end - start) * amount
+
 def main():
     table = rows(DATA)
-    entries = "\n".join(
-        f"{row['time']}  {row['visibility_score']}%"
-        for row in table
-    )
+    first = table[0]
+    score = float(first["visibility_score"])
+    cloud_opacity = lerp(1, 0, max(0, min(score, 100)) / 100)
 
-    fig, ax = plt.subplots(figsize=(10, 8))
-    ax.text(0.05, 0.95, f"Hourly visibility scores\n\n{entries}",
-            ha="left", va="top", fontsize=11, family="monospace")
+    fig, ax = plt.subplots(figsize=(10, 8), facecolor="black")
+    ax.set_facecolor("black")
+    cloud = imread(SPRITE)
+    for x in range(8):
+        for y in range(6):
+            ax.imshow(cloud, extent=(x, x + 1, y, y + 1),
+                      alpha=cloud_opacity)
+    ax.text(0.05, 5.95, f"{first['time']}  {score:.0f}%",
+            ha="left", va="top", fontsize=14, color="white")
+    ax.set_xlim(0, 8)
+    ax.set_ylim(0, 6)
     ax.axis("off")
     fig.tight_layout()
 
