@@ -111,7 +111,8 @@ def main():
               extent=(moon_x - 0.45, moon_x + 0.45,
                       moon_y - 0.45, moon_y + 0.45))
     ax.text(moon_x, moon_y - 0.7,
-            "Visible" if moon_altitude > 0 else "Below horizon",
+            "Visible" if moon_altitude > 0
+            else "Below horizon\nillumination not considered",
             ha="center", va="top", fontsize=11, color="white")
     cloud = imread(SPRITE)
     variation = random.Random(42)
