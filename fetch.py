@@ -16,6 +16,7 @@ phenomenon: handing it in unchanged is handing in nothing.
 """
 
 import csv
+import math
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -42,6 +43,13 @@ def moon_phase(time_text):
     days_since_new_moon = (hkt.astimezone(timezone.utc) - REFERENCE_NEW_MOON).total_seconds() / 86400
     return (days_since_new_moon / SYNODIC_MONTH_DAYS) % 1
 
+def moon_phase_name(phase):
+    names = (
+        "New Moon", "Waxing crescent", "First quarter", "Waxing gibbous",
+        "Full Moon", "Waning gibbous", "Last quarter", "Waning crescent",
+    )
+    return names[int((phase + 1 / 16) * 8) % 8]
+
 def fetch(url, path):
     """Fetch the file and replace any existing copy in data/."""
     import requests
@@ -58,26 +66,35 @@ def fetch(url, path):
     sunrise = response["daily"]["sunrise"][0]
     sunset = response["daily"]["sunset"][0]
     moon_phases = [moon_phase(hour) for hour in hours]
+    moon_illuminations = [
+        (1 - math.cos(2 * math.pi * phase)) * 50
+        for phase in moon_phases
+    ]
+    moon_names = [moon_phase_name(phase) for phase in moon_phases]
     stargaze_score = [
         min(visibility_meters / MAX_CLEAR_VISIBILITY_METERS * 100, 100)
         * (1 - cloud / 100)
+        * (1 - moon_illumination / 100)
         if not (
             datetime.fromisoformat(hour) >= datetime.fromisoformat(sunrise)
             and datetime.fromisoformat(hour) < datetime.fromisoformat(sunset)
         )
         else 0
-        for hour, cloud, visibility_meters in zip(hours, cloud_coverage, visibility)
+        for hour, cloud, visibility_meters, moon_illumination in zip(
+            hours, cloud_coverage, visibility, moon_illuminations
+        )
     ]
 
     with path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.writer(handle)
         writer.writerow([
             "time", "cloud_coverage", "visibility", "stargaze_score",
-            "sunrise", "sunset", "moon_phase",
+            "sunrise", "sunset", "moon_phase", "moon_illumination", "moon_name",
         ])
         writer.writerows(
             zip(hours, cloud_coverage, visibility, stargaze_score,
-                [sunrise] * len(hours), [sunset] * len(hours), moon_phases)
+                [sunrise] * len(hours), [sunset] * len(hours), moon_phases,
+                moon_illuminations, moon_names)
         )
 
     print(f"saved data/{path.name} ({path.stat().st_size // 1024} KB). Now: git add data")

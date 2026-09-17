@@ -79,6 +79,7 @@ def main():
     visibility = format_visibility(float(first["visibility"]))
     stargaze_score = float(first["stargaze_score"])
     moon_phase = float(first["moon_phase"])
+    moon_illumination = float(first["moon_illumination"])
     daylight_progress = (
         (hkt_time - sunrise).total_seconds()
         / (sunset - sunrise).total_seconds()
@@ -117,7 +118,9 @@ def main():
             f"Time ({TIMEZONE}): {readable_time}\n"
             f"Cloud coverage: {cloud_coverage:.0f}%\n"
             f"Visibility: {visibility}\n"
-            f"Stargaze score: {stargaze_score:.0f}%",
+            f"Stargaze score: {stargaze_score:.0f}%\n"
+            f"Moon illumination: {moon_illumination:.0f}%\n"
+            f"Moon phase: {first['moon_name']}",
             ha="left", va="top", fontsize=14, color="white")
     ax.set_xlim(0, 8)
     ax.set_ylim(0, 6)
