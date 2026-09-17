@@ -16,7 +16,7 @@ phenomenon: handing it in unchanged is handing in nothing.
 """
 
 import csv
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 # Fetch hourly cloud cover data from Open-Meteo for your coordinates
@@ -30,8 +30,17 @@ URL = (
 
 FILE = "hk-hourly-coud-cover.csv"                         
 MAX_CLEAR_VISIBILITY_METERS = 10_000
+SYNODIC_MONTH_DAYS = 29.530588853
+REFERENCE_NEW_MOON = datetime(2000, 1, 6, 18, 14, tzinfo=timezone.utc)
 HERE = Path(__file__).parent
 DATA = HERE / "data"
+
+def moon_phase(time_text):
+    hkt = datetime.fromisoformat(time_text).replace(
+        tzinfo=timezone(timedelta(hours=8))
+    )
+    days_since_new_moon = (hkt.astimezone(timezone.utc) - REFERENCE_NEW_MOON).total_seconds() / 86400
+    return (days_since_new_moon / SYNODIC_MONTH_DAYS) % 1
 
 def fetch(url, path):
     """Fetch the file and replace any existing copy in data/."""
@@ -48,6 +57,7 @@ def fetch(url, path):
     visibility = response["hourly"]["visibility"][:24]
     sunrise = response["daily"]["sunrise"][0]
     sunset = response["daily"]["sunset"][0]
+    moon_phases = [moon_phase(hour) for hour in hours]
     visibility_score = [
         min(visibility_meters / MAX_CLEAR_VISIBILITY_METERS * 100, 100)
         * (1 - cloud / 100)
@@ -63,11 +73,11 @@ def fetch(url, path):
         writer = csv.writer(handle)
         writer.writerow([
             "time", "cloud_coverage", "visibility", "visibility_score",
-            "sunrise", "sunset",
+            "sunrise", "sunset", "moon_phase",
         ])
         writer.writerows(
             zip(hours, cloud_coverage, visibility, visibility_score,
-                [sunrise] * len(hours), [sunset] * len(hours))
+                [sunrise] * len(hours), [sunset] * len(hours), moon_phases)
         )
 
     print(f"saved data/{path.name} ({path.stat().st_size // 1024} KB). Now: git add data")

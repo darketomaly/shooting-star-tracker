@@ -50,14 +50,16 @@ def lerp_color(start, end, amount):
         for start_channel, end_channel in zip(start, end)
     )
 
-def moon_image():
+def moon_image(phase):
     coordinates = np.linspace(-1, 1, 100)
     x, y = np.meshgrid(coordinates, coordinates)
-    moon = x**2 + y**2 <= 1
-    cutout = (x - 0.4)**2 + (y + 0.1)**2 <= 1
+    disk = x**2 + y**2 <= 1
+    z = np.sqrt(np.maximum(0, 1 - x**2 - y**2))
+    angle = 2 * math.pi * phase
+    illuminated = x * math.sin(angle) + z * math.cos(angle) > 0
     image = np.zeros((100, 100, 4))
     image[..., :3] = (0.85, 0.85, 0.85)
-    image[..., 3] = moon & ~cutout
+    image[..., 3] = disk & illuminated
     return image
 
 def main():
@@ -76,6 +78,7 @@ def main():
     readable_time = hkt_time.strftime("%I:%M %p").lstrip("0")
     visibility = format_visibility(float(first["visibility"]))
     visibility_score = float(first["visibility_score"])
+    moon_phase = float(first["moon_phase"])
     daylight_progress = (
         (hkt_time - sunrise).total_seconds()
         / (sunset - sunrise).total_seconds()
@@ -93,7 +96,7 @@ def main():
     if sunrise <= hkt_time < sunset:
         ax.add_patch(Circle((7, 5), 0.45, color="#ffd34e"))
     else:
-        ax.imshow(moon_image(), extent=(6.55, 7.45, 4.55, 5.45))
+        ax.imshow(moon_image(moon_phase), extent=(6.55, 7.45, 4.55, 5.45))
     cloud = imread(SPRITE)
     variation = random.Random(42)
     positions = [(x, y) for x in range(8) for y in range(6)]
