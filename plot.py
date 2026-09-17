@@ -30,7 +30,7 @@ OUT = HERE / "out"
 SPRITE = HERE / "sprites" / "cloud.png"
 
 def rows(path):
-    """Read the hourly visibility scores from the generated CSV."""
+    """Read hourly cloud coverage from the generated CSV."""
     with path.open(encoding="utf-8-sig", newline="") as handle:
         return list(csv.DictReader(handle))
 
@@ -40,8 +40,8 @@ def lerp(start, end, amount):
 def main():
     table = rows(DATA)
     first = table[0]
-    score = float(first["visibility_score"])
-    cloud_opacity = lerp(1, 0, max(0, min(score, 100)) / 100)
+    cloud_coverage = float(first["cloud_coverage"])
+    cloud_opacity = lerp(0, 1, max(0, min(cloud_coverage, 100)) / 100)
 
     fig, ax = plt.subplots(figsize=(10, 8), facecolor="black")
     ax.set_facecolor("black")
@@ -59,7 +59,7 @@ def main():
                          + ax.transData)
             ax.imshow(cloud, extent=(left, left + 1, bottom, bottom + 1),
                       transform=transform, alpha=cloud_opacity)
-    ax.text(0.05, 5.95, f"Visibility score at {first['time']} -> {score:.0f}%",
+    ax.text(0.05, 5.95, f"Cloud coverage at {first['time']} -> {cloud_coverage:.0f}%",
             ha="left", va="top", fontsize=14, color="white")
     ax.set_xlim(0, 8)
     ax.set_ylim(0, 6)
