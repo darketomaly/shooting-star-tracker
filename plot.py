@@ -17,8 +17,8 @@ import csv
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+from fetch import FILE
 
-FILE = "hko-daily-mean-temperature-2026.csv"   # CHANGE ME: the same name as in fetch.py
 PICTURE = "plot.png"                           # what goes into out/, and into the README
 
 HERE = Path(__file__).parent

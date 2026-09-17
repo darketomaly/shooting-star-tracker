@@ -16,8 +16,6 @@ phenomenon: handing it in unchanged is handing in nothing.
 
 from pathlib import Path
 
-import requests
-
 # Fetch hourly cloud cover data from Open-Meteo for your coordinates
 # Hong Kong coords (22.3193, 114.1694)
 lat, lon = 22.3193, 114.1694
@@ -29,6 +27,8 @@ DATA = HERE / "data"
 
 def fetch(url, path):
     """Fetch the file and replace any existing copy in data/."""
+    import requests
+
     DATA.mkdir(exist_ok=True)
     print(f"asking {url}")
     reply = requests.get(url, timeout=60, headers={"User-Agent": "SD5913 PolyU student"})
@@ -36,7 +36,6 @@ def fetch(url, path):
     path.write_bytes(reply.content)      # the raw reply, byte for byte: what arrived is what gets committed
     print(f"saved data/{path.name} ({path.stat().st_size // 1024} KB). Now: git add data")
     return path
-
 
 if __name__ == "__main__":
     fetch(URL, DATA / FILE)
