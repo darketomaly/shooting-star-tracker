@@ -77,6 +77,9 @@ def main():
     moon_phase = float(first["moon_phase"])
     moon_illumination = float(first["moon_illumination"])
     moon_altitude = float(first["moon_altitude"])
+    moon_azimuth = float(first["moon_azimuth"])
+    sun_altitude = float(first["sun_altitude"])
+    sun_azimuth = float(first["sun_azimuth"])
     daylight_progress = (
         (hkt_time - sunrise).total_seconds()
         / (sunset - sunrise).total_seconds()
@@ -99,10 +102,17 @@ def main():
     star_alphas = [star_variation.uniform(0.4, 1) for _ in range(star_count)]
     ax.scatter(stars_x, stars_y, s=star_sizes, c="#fff4c2",
                alpha=star_alphas, linewidths=0)
-    if sunrise <= hkt_time < sunset:
-        ax.add_patch(Circle((7, 5), 0.45, color="#ffd34e"))
-    else:
-        ax.imshow(moon_image(moon_phase), extent=(6.55, 7.45, 4.55, 5.45))
+    sun_x = sun_azimuth / 360 * 8
+    sun_y = max(0, min(6, sun_altitude / 90 * 6))
+    moon_x, moon_y = 7, 5
+    if sun_altitude > 0:
+        ax.add_patch(Circle((sun_x, sun_y), 0.45, color="#ffd34e"))
+    ax.imshow(moon_image(moon_phase),
+              extent=(moon_x - 0.45, moon_x + 0.45,
+                      moon_y - 0.45, moon_y + 0.45))
+    ax.text(moon_x, moon_y - 0.7,
+            "Visible" if moon_altitude > 0 else "Below horizon",
+            ha="center", va="top", fontsize=11, color="white")
     cloud = imread(SPRITE)
     variation = random.Random(42)
     positions = [(x, y) for x in range(8) for y in range(6)]

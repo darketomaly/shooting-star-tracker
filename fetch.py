@@ -21,7 +21,10 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from astral import Observer
-from astral.moon import elevation
+from astral.moon import azimuth as moon_azimuth
+from astral.moon import elevation as moon_elevation
+from astral.sun import azimuth as sun_azimuth
+from astral.sun import elevation as sun_elevation
 
 # Fetch hourly cloud cover data from Open-Meteo for your coordinates
 # Hong Kong coords (22.3193, 114.1694)
@@ -74,15 +77,18 @@ def fetch(url, path):
         for phase in moon_phases
     ]
     observer = Observer(latitude=lat, longitude=lon)
-    moon_altitudes = [
-        elevation(
-            observer,
-            datetime.fromisoformat(hour).replace(
-                tzinfo=timezone(timedelta(hours=8))
-            ),
+    timestamps = [
+        datetime.fromisoformat(hour).replace(
+            tzinfo=timezone(timedelta(hours=8))
         )
         for hour in hours
     ]
+    moon_altitudes = [
+        moon_elevation(observer, timestamp) for timestamp in timestamps
+    ]
+    moon_azimuths = [moon_azimuth(observer, timestamp) for timestamp in timestamps]
+    sun_altitudes = [sun_elevation(observer, timestamp) for timestamp in timestamps]
+    sun_azimuths = [sun_azimuth(observer, timestamp) for timestamp in timestamps]
     moon_names = [moon_phase_name(phase) for phase in moon_phases]
     stargaze_score = [
         min(visibility_meters / MAX_CLEAR_VISIBILITY_METERS * 100, 100)
@@ -107,12 +113,14 @@ def fetch(url, path):
         writer.writerow([
             "time", "cloud_coverage", "visibility", "stargaze_score",
             "sunrise", "sunset", "moon_phase", "moon_illumination",
-            "moon_altitude", "moon_name",
+            "moon_altitude", "moon_azimuth", "sun_altitude", "sun_azimuth",
+            "moon_name",
         ])
         writer.writerows(
             zip(hours, cloud_coverage, visibility, stargaze_score,
                 [sunrise] * len(hours), [sunset] * len(hours), moon_phases,
-                moon_illuminations, moon_altitudes, moon_names)
+                moon_illuminations, moon_altitudes, moon_azimuths,
+                sun_altitudes, sun_azimuths, moon_names)
         )
 
     print(f"saved data/{path.name} ({path.stat().st_size // 1024} KB). Now: git add data")
