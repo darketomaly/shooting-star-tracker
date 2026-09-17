@@ -67,11 +67,7 @@ def main():
     hkt = timezone(timedelta(hours=8))
     sunrise = datetime.fromisoformat(table[0]["sunrise"]).replace(tzinfo=hkt)
     sunset = datetime.fromisoformat(table[0]["sunset"]).replace(tzinfo=hkt)
-    first = next(
-        (row for row in table
-         if datetime.fromisoformat(row["time"]).hour == 1),
-        table[0],
-    )
+    first = max(table, key=lambda row: float(row["stargaze_score"]))
     cloud_coverage = float(first["cloud_coverage"])
     coverage_fraction = max(0, min(cloud_coverage, 100)) / 100
     hkt_time = datetime.fromisoformat(first["time"]).replace(tzinfo=hkt)
@@ -101,7 +97,7 @@ def main():
     stars_y = [star_variation.uniform(0, 6) for _ in range(star_count)]
     star_sizes = [star_variation.uniform(3, 14) for _ in range(star_count)]
     star_alphas = [star_variation.uniform(0.4, 1) for _ in range(star_count)]
-    ax.scatter(stars_x, stars_y, s=star_sizes, c="white",
+    ax.scatter(stars_x, stars_y, s=star_sizes, c="#fff4c2",
                alpha=star_alphas, linewidths=0)
     if sunrise <= hkt_time < sunset:
         ax.add_patch(Circle((7, 5), 0.45, color="#ffd34e"))
