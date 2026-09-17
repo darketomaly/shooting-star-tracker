@@ -21,7 +21,11 @@ from pathlib import Path
 # Fetch hourly cloud cover data from Open-Meteo for your coordinates
 # Hong Kong coords (22.3193, 114.1694)
 lat, lon = 22.3193, 114.1694
-URL = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&hourly=cloud_cover,visibility&forecast_days=1"
+URL = (
+    f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}"
+    "&hourly=cloud_cover,visibility&daily=sunrise,sunset"
+    "&forecast_days=1&timezone=Asia%2FHong_Kong"
+)
 
 FILE = "hk-hourly-coud-cover.csv"                         
 MAX_CLEAR_VISIBILITY_METERS = 10_000
@@ -41,6 +45,8 @@ def fetch(url, path):
     cloud_coverage = response["hourly"]["cloud_cover"][:24]
     hours = response["hourly"]["time"][:24]
     visibility = response["hourly"]["visibility"][:24]
+    sunrise = response["daily"]["sunrise"][0]
+    sunset = response["daily"]["sunset"][0]
     visibility_score = [
         min(visibility_meters / MAX_CLEAR_VISIBILITY_METERS * 100, 100)
         for visibility_meters in visibility
@@ -48,8 +54,14 @@ def fetch(url, path):
 
     with path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.writer(handle)
-        writer.writerow(["time", "cloud_coverage", "visibility", "visibility_score"])
-        writer.writerows(zip(hours, cloud_coverage, visibility, visibility_score))
+        writer.writerow([
+            "time", "cloud_coverage", "visibility", "visibility_score",
+            "sunrise", "sunset",
+        ])
+        writer.writerows(
+            zip(hours, cloud_coverage, visibility, visibility_score,
+                [sunrise] * len(hours), [sunset] * len(hours))
+        )
 
     print(f"saved data/{path.name} ({path.stat().st_size // 1024} KB). Now: git add data")
     return path

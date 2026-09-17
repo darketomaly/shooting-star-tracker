@@ -20,6 +20,7 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 from matplotlib.image import imread
+from matplotlib.patches import Circle
 from matplotlib.transforms import Affine2D
 from fetch import FILE
 
@@ -43,16 +44,28 @@ def format_visibility(meters):
 
 def main():
     table = rows(DATA)
-    first = table[0]
+    hkt = timezone(timedelta(hours=8))
+    sunrise = datetime.fromisoformat(table[0]["sunrise"]).replace(tzinfo=hkt)
+    sunset = datetime.fromisoformat(table[0]["sunset"]).replace(tzinfo=hkt)
+    first = next(
+        row for row in table
+        if sunrise <= datetime.fromisoformat(row["time"]).replace(tzinfo=hkt) < sunset
+    )
     cloud_coverage = float(first["cloud_coverage"])
     coverage_fraction = max(0, min(cloud_coverage, 100)) / 100
-    utc_time = datetime.fromisoformat(first["time"]).replace(tzinfo=timezone.utc)
-    hkt_time = utc_time.astimezone(timezone(timedelta(hours=8)))
+    hkt_time = datetime.fromisoformat(first["time"]).replace(tzinfo=hkt)
     readable_time = hkt_time.strftime("%I:%M %p").lstrip("0")
     visibility = format_visibility(float(first["visibility"]))
+    sunrise = datetime.fromisoformat(first["sunrise"]).replace(tzinfo=hkt)
+    sunset = datetime.fromisoformat(first["sunset"]).replace(tzinfo=hkt)
 
     fig, ax = plt.subplots(figsize=(10, 8), facecolor="black")
     ax.set_facecolor("black")
+    if sunrise <= hkt_time < sunset:
+        ax.add_patch(Circle((7, 5), 0.45, color="#ffd34e"))
+    else:
+        ax.add_patch(Circle((7, 5), 0.45, color="#d9d9d9"))
+        ax.add_patch(Circle((7.18, 5.15), 0.45, color="black"))
     cloud = imread(SPRITE)
     variation = random.Random(42)
     positions = [(x, y) for x in range(8) for y in range(6)]
