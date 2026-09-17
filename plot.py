@@ -15,6 +15,7 @@ the bottom is the transformation you chose. Print before you plot.
 
 import csv
 import random
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -28,17 +29,27 @@ HERE = Path(__file__).parent
 DATA = HERE / "data" / FILE
 OUT = HERE / "out"
 SPRITE = HERE / "sprites" / "cloud.png"
+TIMEZONE = "HKT"
 
 def rows(path):
     """Read hourly cloud coverage from the generated CSV."""
     with path.open(encoding="utf-8-sig", newline="") as handle:
         return list(csv.DictReader(handle))
 
+def format_visibility(meters):
+    if meters >= 1000:
+        return f"{meters / 1000:.2f}".rstrip("0").rstrip(".") + " km"
+    return f"{meters:.0f} m"
+
 def main():
     table = rows(DATA)
     first = table[0]
     cloud_coverage = float(first["cloud_coverage"])
     coverage_fraction = max(0, min(cloud_coverage, 100)) / 100
+    utc_time = datetime.fromisoformat(first["time"]).replace(tzinfo=timezone.utc)
+    hkt_time = utc_time.astimezone(timezone(timedelta(hours=8)))
+    readable_time = hkt_time.strftime("%I:%M %p").lstrip("0")
+    visibility = format_visibility(float(first["visibility"]))
 
     fig, ax = plt.subplots(figsize=(10, 8), facecolor="black")
     ax.set_facecolor("black")
@@ -59,8 +70,9 @@ def main():
             ax.imshow(cloud, extent=(left, left + 1, bottom, bottom + 1),
                       transform=transform)
     ax.text(0.05, 5.95,
-            f"Cloud coverage at {first['time']} -> {cloud_coverage:.0f}%\n"
-            f"Visibility -> {float(first['visibility']):.0f} m",
+            f"Time ({TIMEZONE}): {readable_time}\n"
+            f"Cloud coverage: {cloud_coverage:.0f}%\n"
+            f"Visibility: {visibility}",
             ha="left", va="top", fontsize=14, color="white")
     ax.set_xlim(0, 8)
     ax.set_ylim(0, 6)
