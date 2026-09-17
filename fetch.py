@@ -18,13 +18,14 @@ from pathlib import Path
 
 import requests
 
-URL = ("https://data.weather.gov.hk/weatherAPI/opendata/opendata.php"
-       "?dataType=CLMTEMP&rformat=csv&station=HKO&year=2026")      # CHANGE ME
-FILE = "hko-daily-mean-temperature-2026.csv"                          # CHANGE ME: say what it is,
-                                                                      # keep the publisher's extension
+# Fetch hourly cloud cover data from Open-Meteo for your coordinates
+# Hong Kong coords (22.3193, 114.1694)
+lat, lon = 22.3193, 114.1694
+URL = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&hourly=cloud_cover,visibility&forecast_days=1"
+
+FILE = "hk-hourly-coud-cover.csv"                         
 HERE = Path(__file__).parent
 DATA = HERE / "data"
-
 
 def fetch(url, path):
     """Ask for the file once. If it is already in data/, do nothing."""
