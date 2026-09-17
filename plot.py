@@ -1,6 +1,6 @@
 # /// script
 # requires-python = ">=3.10"
-# dependencies = ["matplotlib", "numpy"]
+# dependencies = ["matplotlib", "numpy", "astral"]
 # ///
 
 """
@@ -80,6 +80,7 @@ def main():
     stargaze_score = float(first["stargaze_score"])
     moon_phase = float(first["moon_phase"])
     moon_illumination = float(first["moon_illumination"])
+    moon_altitude = float(first["moon_altitude"])
     daylight_progress = (
         (hkt_time - sunrise).total_seconds()
         / (sunset - sunrise).total_seconds()
@@ -120,8 +121,13 @@ def main():
             f"Visibility: {visibility}\n"
             f"Stargaze score: {stargaze_score:.0f}%\n"
             f"Moon illumination: {moon_illumination:.0f}%\n"
-            f"Moon phase: {first['moon_name']}",
-            ha="left", va="top", fontsize=14, color="white")
+            f"Moon altitude: {moon_altitude:.1f}°\n"
+            f"Moon phase: {first['moon_name']}\n\n"
+            "Not considered:\n"
+            "Light pollution, target altitude",
+            ha="left", va="top", fontsize=14, color="white",
+            bbox=dict(facecolor="black", alpha=0.55, edgecolor="none",
+                      boxstyle="round,pad=0.5"))
     ax.set_xlim(0, 8)
     ax.set_ylim(0, 6)
     ax.axis("off")

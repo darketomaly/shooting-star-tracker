@@ -1,6 +1,6 @@
 # /// script
 # requires-python = ">=3.10"
-# dependencies = ["requests"]
+# dependencies = ["requests", "astral"]
 # ///
 
 """
@@ -19,6 +19,9 @@ import csv
 import math
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+
+from astral import Observer
+from astral.moon import elevation
 
 # Fetch hourly cloud cover data from Open-Meteo for your coordinates
 # Hong Kong coords (22.3193, 114.1694)
@@ -70,18 +73,32 @@ def fetch(url, path):
         (1 - math.cos(2 * math.pi * phase)) * 50
         for phase in moon_phases
     ]
+    observer = Observer(latitude=lat, longitude=lon)
+    moon_altitudes = [
+        elevation(
+            observer,
+            datetime.fromisoformat(hour).replace(
+                tzinfo=timezone(timedelta(hours=8))
+            ),
+        )
+        for hour in hours
+    ]
     moon_names = [moon_phase_name(phase) for phase in moon_phases]
     stargaze_score = [
         min(visibility_meters / MAX_CLEAR_VISIBILITY_METERS * 100, 100)
         * (1 - cloud / 100)
-        * (1 - moon_illumination / 100)
+        * (
+            1
+            - moon_illumination / 100
+            * max(0, math.sin(math.radians(moon_altitude)))
+        )
         if not (
             datetime.fromisoformat(hour) >= datetime.fromisoformat(sunrise)
             and datetime.fromisoformat(hour) < datetime.fromisoformat(sunset)
         )
         else 0
-        for hour, cloud, visibility_meters, moon_illumination in zip(
-            hours, cloud_coverage, visibility, moon_illuminations
+        for hour, cloud, visibility_meters, moon_illumination, moon_altitude in zip(
+            hours, cloud_coverage, visibility, moon_illuminations, moon_altitudes
         )
     ]
 
@@ -89,12 +106,13 @@ def fetch(url, path):
         writer = csv.writer(handle)
         writer.writerow([
             "time", "cloud_coverage", "visibility", "stargaze_score",
-            "sunrise", "sunset", "moon_phase", "moon_illumination", "moon_name",
+            "sunrise", "sunset", "moon_phase", "moon_illumination",
+            "moon_altitude", "moon_name",
         ])
         writer.writerows(
             zip(hours, cloud_coverage, visibility, stargaze_score,
                 [sunrise] * len(hours), [sunset] * len(hours), moon_phases,
-                moon_illuminations, moon_names)
+                moon_illuminations, moon_altitudes, moon_names)
         )
 
     print(f"saved data/{path.name} ({path.stat().st_size // 1024} KB). Now: git add data")
